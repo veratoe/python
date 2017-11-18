@@ -30,27 +30,32 @@ for i in range(0, len(text) - maxlen, step):
 
 print('fragmenten gegenereerd: %s sentences' % len(sentences))
 
-x = np.reshape(sentences, (len(sentences), maxlen, 1))
-print('Normalizeren..')
-x = x / float(len(chars))
-y = keras.utils.to_categorical(next_chars);
+x = np.zeros((len(sentences), maxlen, len(chars)), dtype = np.bool)
+y = np.zeros((len(sentences), len(chars)), dtype = np.bool)
+
+for i, sentence in enumerate(sentences):
+    for j, c in enumerate(sentence):
+        x[i, j, char_to_int(c)] = 1
+    y[i, char_to_int(next_chars[i])] = 1
 
 print('vectors gemaakt..')
 
 model = Sequential()
-model.add(LSTM(256, input_shape = (maxlen, 1), return_sequences = True))
+model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
 model.add(Dropout(0.2))
-model.add(LSTM(256, input_shape = (maxlen, 1)))
+model.add(LSTM(128))
 model.add(Dropout(0.2))
-model.add(Dense(y.shape[1], activation = 'softmax'))
+model.add(Dense(len(chars), activation = 'softmax'))
 model.compile(loss = 'categorical_crossentropy', optimizer = 'adam')
-model.load_weights('weights-1.4465.hdf5')
-filepath="weights-{loss:.4f}.hdf5"
+
+model.load_weights('weights-best.hdf5')
+filepath = "weights-best.hdf5"
+
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=2, save_best_only=True, mode='min')
 
 print('model geladen en gecompileerd..')
 
-last_loss = 0
+best_loss = 10000
 start_time = time.time()
 
 for iteration in (range(1, 600)):
@@ -120,7 +125,7 @@ for iteration in (range(1, 600)):
         'iteration': iteration,
         'loss': loss,
         'result_text': result_text,
-        'model_improved': "true" if loss < last_loss else "false",
+        'model_improved': "true" if loss < best_loss else "false",
         'time': time.time() - start_time
 
     }))
@@ -129,4 +134,5 @@ for iteration in (range(1, 600)):
     f.close()
 
     start_time = time.time()
-    last_loss = loss
+    if loss < best_loss:
+        best_loss = loss
