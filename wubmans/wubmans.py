@@ -1,5 +1,12 @@
+import sys
+sys.path.append('../rnn')
+
 import flask
 import json
+from flask import request
+
+import rnn
+
 app = flask.Flask(__name__)
 
 results_json = '/home/diede/Documents/python/rnn/resultaten.json'
@@ -21,6 +28,19 @@ def status():
 def results():
     return app.response_class(
         response = json.dumps(open(results_json).read()),
+        status = 200,
+        mimetype = 'application/json'
+    )
+
+
+@app.route("/seed", methods = ['POST'])
+def seed():
+    print('we got a request')
+    print(request.get_json())
+    a = rnn.predict(request.get_json())
+
+    return app.response_class(
+        response = json.dumps(a),
         status = 200,
         mimetype = 'application/json'
     )

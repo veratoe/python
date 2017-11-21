@@ -58,12 +58,22 @@
             }
 
             p span {
-                display: inline-block;
+                //display: inline-block;
             }
 
             canvas {
                 position: fixed;
                 top: 10
+            }
+
+            body.hide_certainties p span {
+                color: #000 !important;
+            }
+
+            #seed_length {
+                font-weight: bold;
+                font-family: monospace;
+                color: #777;
             }
 
             @media only screen and (max-device-width: 768px) { 
@@ -72,6 +82,7 @@
                     width: 80%;
                     margin: 0 auto;
                 }
+
                 .mob_hide {
                     display: none !important;
                 }
@@ -88,18 +99,35 @@
         <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     
     </head>
-    <body>
+    <body class="hide_certainties">
 
         <canvas id="loss_chart" width="400" height="300" class="mob_hide"></canvas>
 
         <div class="container">
             <div class="header">
-            <h2>LE NIETZSCHE generator</h2>
+            <h2 style="display: inline-block">LE NIETZSCHE generator</h2>
+            <div class="options" style="float: right; margin-top: 20px">
+                    <span>toon certainties</span>
+                    <input type="checkbox" name="certainties"/>
+            </div>
             <div class="status">
                 <span><label>Batch:</label> <span id="status_batch">0</span></span>
                 <span><label>Loss:</label> <span id="status_loss">0</span></span>
                 <span><label>Iteration:</label> <span id="status_iteration">0</span></span>
                 <span style="float: right"><label>Time:</label> <span id="status_time">0:00</span></span>
+            </div>
+
+            <div class="input" style="margin-bottom: 20px">
+                <input type=text id="seed">
+                <button id="submit">Genereer</button>
+                <span id="seed_length">0</span>
+            </div>
+                 
+            <div class="response">
+                <div class="blob" style="background-color: #dbebf1;">
+                    <p class="text">Voor een seed in</p>
+                </div>
+
             </div>
 
             <div id="blobs_list">
@@ -122,207 +150,9 @@
 
         </script>
 
-        <script>
+        <script src="static/chart.js"></script>
+        <script src="static/script.js"></script>
 
-            var results, 
-                status, 
-                status_pending,
-                current_iteration = 0;
-
-            var loadResults = function () {
-
-                $.getJSON('results', function(data) { 
-                    r = data.split("#@#");
-                    r = r.map(function(json) { 
-                        try {
-                            var j = JSON.parse(json);
-                            j.model_improved = j.model_improved == "true" ? "MODEL VERBETERD" : "";
-                            j.loss = Number(j.loss).toFixed(4);
-                            if (j.time) {
-                                var minutes = Math.floor(Number(j.time) / 60)
-                                var seconds = Math.floor(Number(j.time) % 60)
-                                j.time = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-                            } else {
-                                j.time = "-"
-                            }   
-
-                            return j;
-                        }
-                        catch(e) {
-                        }
-
-                    });
-
-                    r = r.filter(function (item) { return typeof item === "object" });
-
-                    for (var i = 0; i < r.length; i++) {
-                        r[i].iteration = i
-                    }
-                    
-                    results = r;
-
-                    renderBlobs();
-                    createChart();
-                })
-
-            }
-
-            setInterval(function () {
-
-                if (status_pending) {
-                    
-                    return;
-                }
-
-                status_pending = true;
-
-                $.getJSON('status', function(data) { 
-
-                    var status;
-
-                    try {
-                        status = JSON.parse(data);
-                    }
-
-                    catch(e) {
-                        status_pending = false;
-                    }
-
-                    if (!status) {
-                        return;
-                    } 
-
-                    status.loss = Number(status.loss).toFixed(4);
-                    var minutes = Math.floor(Number(status.time) / 60)
-                    var seconds = Math.floor(Number(status.time) % 60)
-                    status.time = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-
-                    for (var key in status) {
-                        $("#status_" + key).text(status[key])
-                    };
-
-                    if (current_iteration !== status.iteration) {
-                        current_iteration = status.iteration;
-                        loadResults();
-                    }
-
-                    status_pending = false;
-
-                })
-                
-            }, 10)
-
-
-            var renderBlobs = function () {
-            
-                var template = $("#blobs_template").html();
-                var html = "";
-                results.slice().reverse().forEach(function (r) {
-                    html += renderHTML(template, r);
-                })
-
-                $("#blobs_list").html(html);
-            }
-
-            var parseResultText = function (data) {
-                if (!data.certainties) 
-                    return data.result_text;
-
-                var html = "";
-                for (c in data.result_text) {
-                    var x = 255 * (1 - data.certainties[c]) | 0;
-                    html += "<span style='color: rgb(" + x + "," + x + "," + x + ")'>" +  "a" + "</span>" 
-                }
-                return html;
-
-            }
-
-            window.colorText = true
-
-            var renderHTML = function (html, data) {
-
-                for (var key in data) {
-                    var regex = new RegExp( "{{\\s+" + key + "\\s+}}", "g" );
-                    if (key === "result_text" && colorText) {
-                        html = html.replace(regex, parseResultText(data));
-                    } else {
-                        html = html.replace(regex, data[key]);
-                    }
-                }
-
-                return html;
-
-            }
-
-        </script>
-
-        <script>
-
-            var ctx = document.getElementById("loss_chart").getContext("2d");
-
-            var createChart = function () {
-
-                var labels = results.map(function(item, index) {
-                   return index; 
-                });
-
-                var data = results.map(function(item) {
-                    return item.loss;
-                });
-
-                new Chart(ctx, {
-
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: "rgb(255, 99, 132)",
-                            borderColor: "none",
-                            fill: false
-                        }]
-                    },
-                    options: { 
-                        legend: {
-                            display: false
-                        },
-                        responsive: false,
-                        scales: {
-                            xAxes: [{
-                                gridLines: {
-                                    display: false
-                                },
-                                ticks: {
-                                    padding: 20,
-                                    //display: false,
-                                    maxTicksLimit: 10,
-                                }
-                            }],
-                            yAxes: [{
-                                gridLines: {
-                                    display: false
-                                },
-                                ticks: {
-                                    maxTicksLimit: 5 
-                                }
-                            }]
-                        },
-                        onClick: function (a, b) { 
-                            console.log(b[0])
-                            if (!b || typeof b !== "object") return;
-                            var $blob = $(".blob#" + (b[0]._index + 1));
-                            $("html, body").animate({ scrollTop: $blob.offset().top - 100 })
-                            $(".blob").removeClass("active");
-                            $blob.addClass("active");
-
-                        }
-                    }
-
-                });
-
-            }
-
-        </script>
 
     </body>
 
