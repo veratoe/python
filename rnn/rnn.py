@@ -6,9 +6,13 @@ import keras
 import json
 import time
 
+from pathlib import Path
+
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Activation, Dropout
 from keras.callbacks import ModelCheckpoint, Callback
+
+filepath = "weights-best.hdf5"
 
 os.system('clear')
 print('We gaan beginnen')
@@ -25,8 +29,8 @@ sentences = []
 next_chars = []
 
 for i in range(0, len(text) - maxlen, step):
-    sentences.append([char_to_int[c] for c in text[i:i + maxlen]])
-    next_chars.append(char_to_int[text[i + maxlen]])
+    sentences.append(text[i:i + maxlen])
+    next_chars.append(text[i + maxlen])
 
 print('fragmenten gegenereerd: %s sentences' % len(sentences))
 
@@ -35,8 +39,9 @@ y = np.zeros((len(sentences), len(chars)), dtype = np.bool)
 
 for i, sentence in enumerate(sentences):
     for j, c in enumerate(sentence):
-        x[i, j, char_to_int(c)] = 1
-    y[i, char_to_int(next_chars[i])] = 1
+        x[i, j, char_to_int[c]] = 1
+    y[i, char_to_int[next_chars[i]]] = 1
+
 
 print('vectors gemaakt..')
 
@@ -48,8 +53,11 @@ model.add(Dropout(0.2))
 model.add(Dense(len(chars), activation = 'softmax'))
 model.compile(loss = 'categorical_crossentropy', optimizer = 'adam')
 
-model.load_weights('weights-best.hdf5')
-filepath = "weights-best.hdf5"
+model.summary()
+input()
+
+if Path(filepath).is_file():
+    model.load_weights(filepath)
 
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=2, save_best_only=True, mode='min')
 
@@ -62,9 +70,6 @@ for iteration in (range(1, 600)):
 
     class NBatchLogger(Callback):
         def __init__(self,display=10):
-            '''
-            display: Number of batches to wait before outputting loss
-            '''
             self.seen = 0
             self.display = display
             self.time = time.time()
@@ -100,7 +105,7 @@ for iteration in (range(1, 600)):
     start_index = random.randint(0, len(sentences) - 1)
     seed = sentences[start_index]
     print("Seed:")
-    print(''.join([int_to_char[c] for c in seed]))
+    print(seed)
     print()
     print("Output:")
     print()
@@ -109,19 +114,22 @@ for iteration in (range(1, 600)):
     result_text = ''
 
     for i in range(400):
-        s = np.reshape(seed, (1, len(seed), 1))
-        s = s / float(len(chars))
+        # seed omzetten in juiste format voor netwerk
+        s = np.zeros((1, maxlen, len(chars)), dtype = np.bool)
+        for i, c in enumerate(seed):
+            s[0, i, char_to_int[c]] = 1
+
         prediction = model.predict(s, verbose = 0)
         index = np.argmax(prediction)
         result = int_to_char[index]
         result_text += result
         sys.stdout.write(result)
-        seed.append(index)
-        seed = seed[1:len(seed)]
+        seed = seed[1:] + result
 
     f = open('resultaten.json', 'a')
+
     f.write(json.dumps({
-        'seed': ''.join([int_to_char[c] for c in initial_seed]), 
+        'seed': initial_seed, 
         'iteration': iteration,
         'loss': loss,
         'result_text': result_text,
