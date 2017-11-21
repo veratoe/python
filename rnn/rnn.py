@@ -11,7 +11,7 @@ from pathlib import Path
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Activation, Dropout
 from keras.callbacks import ModelCheckpoint, Callback
-from keras.optimizers import RMSprop
+from keras.optimizers import Adam
 
 filepath = "weights-best.hdf5"
 
@@ -52,7 +52,7 @@ model.add(Dropout(0.2))
 model.add(LSTM(128))
 model.add(Dropout(0.2))
 model.add(Dense(len(chars), activation = 'softmax'))
-model.compile(loss = 'categorical_crossentropy', optimizer = RMSprop(lr = 0.02))
+model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0005))
 
 model.summary()
 
@@ -116,6 +116,7 @@ for iteration in (range(1, 600)):
 
     initial_seed = seed
     result_text = ''
+    certainties = []
 
     for i in range(400):
         # seed omzetten in juiste format voor netwerk
@@ -125,6 +126,7 @@ for iteration in (range(1, 600)):
 
         prediction = model.predict(s, verbose = 0)
         index = np.argmax(prediction)
+        certainties.append(np.amax(prediction))
         result = int_to_char[index]
         result_text += result
         sys.stdout.write(result)
@@ -138,7 +140,8 @@ for iteration in (range(1, 600)):
         'loss': loss,
         'result_text': result_text,
         'model_improved': "true" if loss < best_loss else "false",
-        'time': time.time() - start_time
+        'time': time.time() - start_time,
+        'certainties': certainties
 
     }))
     f.write("#@#") # marker om json blobs te splitten

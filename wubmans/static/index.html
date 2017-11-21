@@ -106,10 +106,7 @@
         <script id="blobs_template" type="text/template">
 
             <div class="blob" id="{{ iteration }}">
-                <h4>Seed:</h4>
-                <p>{{ seed }}</p>
-                <h4>Gegenereerd:</h4>
-                <p>{{ result_text }}</p>
+                <p><span style="font-weight: bold;" title="seed">{{ seed }}</span><span>{{ result_text }}</span></p>
                 <div class="stats">
                     <span>Epoch: <strong>{{ iteration }}</strong></span> 
                     <span>Loss: <strong>{{ loss }}</strong></span>
