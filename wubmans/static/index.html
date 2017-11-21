@@ -53,7 +53,12 @@
             }
             
             p {
+                word-wrap: break-word;
                 font-family: serif;
+            }
+
+            p span {
+                display: inline-block;
             }
 
             canvas {
@@ -106,7 +111,7 @@
         <script id="blobs_template" type="text/template">
 
             <div class="blob" id="{{ iteration }}">
-                <p><span style="font-weight: bold;" title="seed">{{ seed }}</span><span>{{ result_text }}</span></p>
+                <p><span style="font-weight: bold;" title="seed">{{ seed }}</span>{{ result_text }}</p>
                 <div class="stats">
                     <span>Epoch: <strong>{{ iteration }}</strong></span> 
                     <span>Loss: <strong>{{ loss }}</strong></span>
@@ -165,7 +170,7 @@
             setInterval(function () {
 
                 if (status_pending) {
-                    console.log('adfa');
+                    
                     return;
                 }
 
@@ -219,12 +224,30 @@
                 $("#blobs_list").html(html);
             }
 
+            var parseResultText = function (data) {
+                if (!data.certainties) 
+                    return data.result_text;
+
+                var html = "";
+                for (c in data.result_text) {
+                    var x = 255 * (1 - data.certainties[c]) | 0;
+                    html += "<span style='color: rgb(" + x + "," + x + "," + x + ")'>" +  "a" + "</span>" 
+                }
+                return html;
+
+            }
+
+            window.colorText = true
 
             var renderHTML = function (html, data) {
 
                 for (var key in data) {
                     var regex = new RegExp( "{{\\s+" + key + "\\s+}}", "g" );
-                    html = html.replace(regex, data[key]);
+                    if (key === "result_text" && colorText) {
+                        html = html.replace(regex, parseResultText(data));
+                    } else {
+                        html = html.replace(regex, data[key]);
+                    }
                 }
 
                 return html;

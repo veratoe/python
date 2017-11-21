@@ -127,6 +127,7 @@ for iteration in (range(1, 600)):
         prediction = model.predict(s, verbose = 0)
         index = np.argmax(prediction)
         certainties.append(np.amax(prediction))
+        print(certainties)
         result = int_to_char[index]
         result_text += result
         sys.stdout.write(result)
@@ -141,7 +142,7 @@ for iteration in (range(1, 600)):
         'result_text': result_text,
         'model_improved': "true" if loss < best_loss else "false",
         'time': time.time() - start_time,
-        'certainties': certainties
+        'certainties': [str(x) for x in certainties]
 
     }))
     f.write("#@#") # marker om json blobs te splitten
