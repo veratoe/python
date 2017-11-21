@@ -11,6 +11,7 @@ from pathlib import Path
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Activation, Dropout
 from keras.callbacks import ModelCheckpoint, Callback
+from keras.optimizers import RMSprop
 
 filepath = "weights-best.hdf5"
 
@@ -51,17 +52,17 @@ model.add(Dropout(0.2))
 model.add(LSTM(128))
 model.add(Dropout(0.2))
 model.add(Dense(len(chars), activation = 'softmax'))
-model.compile(loss = 'categorical_crossentropy', optimizer = 'adam')
+model.compile(loss = 'categorical_crossentropy', optimizer = RMSprop(lr = 0.02))
 
 model.summary()
-input()
 
 if Path(filepath).is_file():
+    print('model geladen vanuit file ', filepath)
     model.load_weights(filepath)
 
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=2, save_best_only=True, mode='min')
 
-print('model geladen en gecompileerd..')
+print('model compileerd..')
 
 best_loss = 10000
 start_time = time.time()
@@ -95,6 +96,9 @@ for iteration in (range(1, 600)):
 
     diede = NBatchLogger(display=10)
     callbacks_list = [checkpoint, diede]
+
+    if iteration % 50 == 0:
+        model.save('weights-iteration-' + str(iteration) + '.hdf5')
 
     print()
     print('-' * 50)
