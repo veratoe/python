@@ -1,4 +1,4 @@
-var createChart = function () {
+var createChart = function (results) {
 
     var labels = results.map(function(item, index) {
        return index; 

@@ -1,17 +1,3 @@
-import numpy as np
-import random
-import sys
-import os
-import keras
-import json
-import time
-
-from pathlib import Path
-
-from keras.models import Sequential
-from keras.layers import Dense, LSTM, Activation, Dropout
-from keras.callbacks import ModelCheckpoint, Callback
-from keras.optimizers import Adam
 
 filepath = "weights-best.hdf5"
 maxlen = 40
@@ -23,6 +9,21 @@ char_to_int = dict((v, k) for k, v in enumerate(chars))
 
 
 def train():
+
+    import numpy as np
+    import random
+    import sys
+    import os
+    import keras
+    import json
+    import time
+
+    from pathlib import Path
+
+    from keras.models import Sequential
+    from keras.layers import Dense, LSTM, Activation, Dropout
+    from keras.callbacks import ModelCheckpoint, Callback
+    from keras.optimizers import Adam
 
     os.system('clear')
     print('We gaan beginnen')
@@ -157,38 +158,57 @@ def train():
 
 def predict(seed):
 
-    model = Sequential()
-    model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(128))
-    model.add(Dropout(0.2))
-    model.add(Dense(len(chars), activation = 'softmax'))
-    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0002))
-    model.load_weights(filepath)
+    import tensorflow as tf
 
-    seed = seed[:40]
-    initial_seed = seed
-    result_text = ''
-    certainties = []
+    with tf.device('/cpu:0'):
 
-    for i in range(400):
-        # seed omzetten in juiste format voor netwerk
-        s = np.zeros((1, maxlen, len(chars)), dtype = np.bool)
-        for i, c in enumerate(seed):
-            s[0, i, char_to_int[c]] = 1
+        import numpy as np
+        import random
+        import sys
+        import os
+        import keras
+        import json
+        import time
 
-        prediction = model.predict(s, verbose = 0)
-        index = np.argmax(prediction)
-        certainties.append(np.amax(prediction))
-        result = int_to_char[index]
-        print('char: ', result)
-        result_text += result
-        sys.stdout.write(result)
-        seed = seed[1:] + result
-        print('text: ', result_text)
-        print('seed: ', seed)
+        from pathlib import Path
 
-    return {
-        'result_text': result_text,
-        'certainties': [str(x) for x in certainties]
-    }
+        from keras.models import Sequential
+        from keras.layers import Dense, LSTM, Activation, Dropout
+        from keras.callbacks import ModelCheckpoint, Callback
+        from keras.optimizers import Adam
+
+        model = Sequential()
+        model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(128))
+        model.add(Dropout(0.2))
+        model.add(Dense(len(chars), activation = 'softmax'))
+        model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0002))
+        model.load_weights(filepath)
+
+        seed = seed[:40]
+        initial_seed = seed
+        result_text = ''
+        certainties = []
+
+        for i in range(400):
+            # seed omzetten in juiste format voor netwerk
+            s = np.zeros((1, maxlen, len(chars)), dtype = np.bool)
+            for i, c in enumerate(seed):
+                s[0, i, char_to_int[c]] = 1
+
+            prediction = model.predict(s, verbose = 0)
+            index = np.argmax(prediction)
+            certainties.append(np.amax(prediction))
+            result = int_to_char[index]
+            print('char: ', result)
+            result_text += result
+            sys.stdout.write(result)
+            seed = seed[1:] + result
+            print('text: ', result_text)
+            print('seed: ', seed)
+
+        return {
+            'result_text': result_text,
+            'certainties': [str(x) for x in certainties]
+        }

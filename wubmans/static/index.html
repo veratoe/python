@@ -2,153 +2,66 @@
 <html>
     <head>
     
-        <style>
-
-            html, body {
-                font-family: sans-serif;
-            }
-
-            .container {
-                width: 960px;
-                margin: 0 auto;
-            }
-
-            .blob {
-                background-color: #fcffee;
-                border: 1px solid #ccc;
-                margin-bottom: 10px;
-                font-family: monospace;
-                padding: 20px;
-                color: #444;
-                border-radius: 5px;
-                transition: background-color 1000ms linear;
-
-            }
-
-            .blob.active {
-                background-color: #dee9fd;
-            }
-
-            .blob span.improved {
-                font-weight: bold;
-                color: green;
-                float: right;
-            }
-
-            .status {
-                font-family: monospace;
-                padding: 20px;
-                background-color: #eee;
-                margin-bottom: 10px;
-                border-radius: 5px;
-            }
-
-            .status label {
-                color: #aaa;
-            }
-
-            .stats {
-                color: #de8a8a;
-                margin-top: 10px;
-            }
-            
-            p {
-                word-wrap: break-word;
-                font-family: serif;
-            }
-
-            p span {
-                //display: inline-block;
-            }
-
-            canvas {
-                position: fixed;
-                top: 10
-            }
-
-            body.hide_certainties p span {
-                color: #000 !important;
-            }
-
-            #seed_length {
-                font-weight: bold;
-                font-family: monospace;
-                color: #777;
-            }
-
-            @media only screen and (max-device-width: 768px) { 
-            
-                .container {
-                    width: 80%;
-                    margin: 0 auto;
-                }
-
-                .mob_hide {
-                    display: none !important;
-                }
-
-                p {
-                    padding: 20px 0px;
-                }
-
-            }
-
-        </style>
-
+        <link rel='stylesheet' href="static/main.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.bundle.min.js"></script>
         <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <script src="static/vue.js"></script>
     
     </head>
     <body class="hide_certainties">
 
         <canvas id="loss_chart" width="400" height="300" class="mob_hide"></canvas>
 
-        <div class="container">
-            <div class="header">
-            <h2 style="display: inline-block">LE NIETZSCHE generator</h2>
-            <div class="options" style="float: right; margin-top: 20px">
-                    <span>toon certainties</span>
-                    <input type="checkbox" name="certainties"/>
-            </div>
-            <div class="status">
-                <span><label>Batch:</label> <span id="status_batch">0</span></span>
-                <span><label>Loss:</label> <span id="status_loss">0</span></span>
-                <span><label>Iteration:</label> <span id="status_iteration">0</span></span>
-                <span style="float: right"><label>Time:</label> <span id="status_time">0:00</span></span>
-            </div>
+        <div id="vue-app">
 
-            <div class="input" style="margin-bottom: 20px">
-                <input type=text id="seed">
-                <button id="submit">Genereer</button>
-                <span id="seed_length">0</span>
-            </div>
-                 
-            <div class="response">
-                <div class="blob" style="background-color: #dbebf1;">
-                    <p class="text">Voor een seed in</p>
+            <div class="container">
+                <div class="header">
+                    <h2 style="display: inline-block">LE NIETZSCHE generator</h2>
+                    <div class="options" style="float: right; margin-top: 20px">
+                            <span>toon certainties</span>
+                            <input type="checkbox" name="certainties"/>
+                    </div>
                 </div>
 
-            </div>
+                <div class="status">
+                    <span><label>Batch:</label> <span>{{ status.batch }}</span></span>
+                    <span><label>Loss:</label> <span>{{ status.loss | parse_float }}</span></span>
+                    <span><label>Iteration:</label> <span>{{ status.iteration }}</span></span>
+                    <span style="float: right"><label>Time:</label> <span>{{ status.time | parse_seconds }}</span></span>
+                </div>
 
-            <div id="blobs_list">
-                ... LOADING ...
+                <div class="input" style="margin-bottom: 20px">
+                    <input v-model="seed" type=text id="seed">
+                    <button v-on:click="generate">Genereer</button>
+                    <span id="seed_length">{{ (seed && seed.length) || 0 }}</span>
+                </div>
+                     
+                <div class="response">
+                    <div class="blob" style="background-color: #dbebf1;">
+                        <p v-if="!generate_status" class="text">Voer een tekst in ...</p>
+                        <p v-if="generate_status == 'PENDING'">Nietzsche is aan het nadenken ... </p>
+                        <p v-if="generate_status == 'DONE'" class="text"><strong>{{ seed }}</strong>{{ generated_text }}</p>
+                    </div>
+
+                </div>
+
+                <div id="blobs_list">
+
+                    <div class="blob" v-for="result in results.slice().reverse()">
+                        <p><span style="font-weight: bold;" title="seed">{{ result.seed }}</span>{{ result.result_text }}</p>
+                        <div class="stats">
+                            <span>Epoch: <strong>{{ result.iteration }}</strong></span> 
+                            <span>Loss: <strong>{{ result.loss | parse_float }}</strong></span>
+                            <span>Tijd: <strong>{{ result.time | parse_seconds }}</strong></span>
+                            <span class="improved" v-if="result.model_improved == 'true'">MODEL VERBETERD</span>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
 
         </div>
-
-        <script id="blobs_template" type="text/template">
-
-            <div class="blob" id="{{ iteration }}">
-                <p><span style="font-weight: bold;" title="seed">{{ seed }}</span>{{ result_text }}</p>
-                <div class="stats">
-                    <span>Epoch: <strong>{{ iteration }}</strong></span> 
-                    <span>Loss: <strong>{{ loss }}</strong></span>
-                    <span>Tijd: <strong>{{ time }}</strong></span>
-                    <span class="improved">{{ model_improved }}</span>
-                </div>
-            </div>
-
-        </script>
 
         <script src="static/chart.js"></script>
         <script src="static/script.js"></script>

@@ -1,0 +1,88 @@
+html, body {
+    font-family: sans-serif;
+}
+
+.container {
+    width: 960px;
+    margin: 0 auto;
+}
+
+.blob {
+    background-color: #fcffee;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    font-family: monospace;
+    padding: 20px;
+    color: #444;
+    border-radius: 5px;
+    transition: background-color 1000ms linear;
+
+}
+
+.blob.active {
+    background-color: #dee9fd;
+}
+
+.blob span.improved {
+    font-weight: bold;
+    color: green;
+    float: right;
+}
+
+.status {
+    font-family: monospace;
+    padding: 20px;
+    background-color: #eee;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.status label {
+    color: #aaa;
+}
+
+.stats {
+    color: #de8a8a;
+    margin-top: 10px;
+}
+
+p {
+    word-wrap: break-word;
+    font-family: serif;
+}
+
+p span {
+    //display: inline-block;
+}
+
+canvas {
+    position: fixed;
+    top: 10
+}
+
+body.hide_certainties p span {
+    color: #000 !important;
+}
+
+#seed_length {
+    font-weight: bold;
+    font-family: monospace;
+    color: #777;
+}
+
+@media only screen and (max-device-width: 768px) { 
+
+    .container {
+        width: 80%;
+        margin: 0 auto;
+    }
+
+    .mob_hide {
+        display: none !important;
+    }
+
+    p {
+        padding: 20px 0px;
+    }
+
+}
