@@ -1,11 +1,12 @@
-
 filepath = "weights-best.hdf5"
 maxlen = 40
 step = 3
-text = open('nietzsche.txt').read().lower()
+text = open('verkiezing.txt').read().lower()
 chars = sorted(list(set(text)))
 int_to_char = dict((k, v) for k, v in enumerate(chars))
 char_to_int = dict((v, k) for k, v in enumerate(chars))
+print("Dicts gemaakt ...")
+print("Aantal characters: %s" % len(chars))
 
 
 def train():
@@ -51,6 +52,8 @@ def train():
 
     model = Sequential()
     model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(128, return_sequences = True))
     model.add(Dropout(0.2))
     model.add(LSTM(128))
     model.add(Dropout(0.2))
