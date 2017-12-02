@@ -58,7 +58,7 @@ def train():
     model.add(LSTM(128))
     model.add(Dropout(0.2))
     model.add(Dense(len(chars), activation = 'softmax'))
-    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0001))
+    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.00001))
 
     model.summary()
 

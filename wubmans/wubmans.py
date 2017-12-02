@@ -45,4 +45,4 @@ def seed():
         mimetype = 'application/json'
     )
 
-app.run(debug = True, host = '0.0.0.0', port = 8000)
+app.run(debug = False, host = '192.168.1.14', port = 8000)
