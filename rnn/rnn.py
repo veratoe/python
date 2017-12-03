@@ -51,14 +51,14 @@ def train():
     print('vectors gemaakt..')
 
     model = Sequential()
-    model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
+    model.add(LSTM(256, input_shape = (maxlen, len(chars)), return_sequences = True))
     model.add(Dropout(0.2))
-    model.add(LSTM(128, return_sequences = True))
+    model.add(LSTM(256, return_sequences = True))
     model.add(Dropout(0.2))
-    model.add(LSTM(128))
+    model.add(LSTM(256))
     model.add(Dropout(0.2))
     model.add(Dense(len(chars), activation = 'softmax'))
-    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.00001))
+    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.001))
 
     model.summary()
 
@@ -109,7 +109,7 @@ def train():
         print()
         print('-' * 50)
         print('Iteratie: ', iteration)
-        history = model.fit(x, y, batch_size = 128, epochs = 1, callbacks = callbacks_list)
+        history = model.fit(x, y, batch_size = 64, epochs = 1, callbacks = callbacks_list)
         loss = history.history['loss'][0]
 
         start_index = random.randint(0, len(sentences) - 1)
@@ -121,22 +121,38 @@ def train():
         print()
 
         initial_seed = seed
-        result_text = ''
-        certainties = []
+        result_texts = []
 
-        for i in range(400):
-            # seed omzetten in juiste format voor netwerk
-            s = np.zeros((1, maxlen, len(chars)), dtype = np.bool)
-            for i, c in enumerate(seed):
-                s[0, i, char_to_int[c]] = 1
+        def probs(preds, temperature=1.0):
+        # helper function to sample an index from a probability array
+            preds = np.asarray(preds).astype('float64')
+            preds = np.log(preds) / temperature
+            exp_preds = np.exp(preds)
+            preds = exp_preds / np.sum(exp_preds)
+            probas = np.random.multinomial(1, preds, 1)
+            return np.argmax(probas)
 
-            prediction = model.predict(s, verbose = 0)
-            index = np.argmax(prediction)
-            certainties.append(np.amax(prediction))
-            result = int_to_char[index]
-            result_text += result
-            sys.stdout.write(result)
-            seed = seed[1:] + result
+        for temperature in [0.2, 0.5, 1.0, 1.2]:
+
+            result_text = ''
+            certainties = []
+
+            for i in range(400):
+
+                # seed omzetten in juiste format voor netwerk
+                s = np.zeros((1, maxlen, len(chars)), dtype = np.bool)
+                for i, c in enumerate(seed):
+                    s[0, i, char_to_int[c]] = 1
+    
+                prediction = model.predict(s, verbose = 0)
+                index = probs(prediction, temperature)
+                certainties.append(np.amax(prediction))
+                result = int_to_char[index]
+                result_text += result
+                sys.stdout.write(result)
+                seed = seed[1:] + result
+
+            result_texts.append({ result_text: result_text, certainties: [str(x) for x in certainties] })
 
         f = open('resultaten.json', 'a')
 
@@ -144,12 +160,11 @@ def train():
             'seed': initial_seed, 
             'iteration': iteration,
             'loss': loss,
-            'result_text': result_text,
+            'result_texts': result_texts,
             'model_improved': "true" if loss < best_loss else "false",
             'time': time.time() - start_time,
-            'certainties': [str(x) for x in certainties]
-
         }))
+
         f.write("#@#") # marker om json blobs te splitten
         f.write("\n")
         f.close()
