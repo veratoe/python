@@ -8,7 +8,7 @@
         <script src="static/vue.js"></script>
     
     </head>
-    <body class="hide_certainties">
+    <body>
 
         <canvas id="loss_chart" width="400" height="300" class="mob_hide"></canvas>
 
@@ -19,7 +19,7 @@
                     <h2 style="display: inline-block">Prachtige verkiezingstext createur</h2>
                     <div class="options" style="float: right; margin-top: 20px">
                             <span>toon certainties</span>
-                            <input type="checkbox" name="certainties"/>
+                            <input v-model="show_certainties" type="checkbox" name="certainties"/>
                     </div>
                 </div>
 
@@ -31,24 +31,40 @@
                 </div>
 
                 <div class="input" style="margin-bottom: 20px">
-                    <input v-model="seed" type=text id="seed">
-                    <button v-on:click="generate">Genereer</button>
-                    <span id="seed_length">{{ (seed && seed.length) || 0 }}</span>
+                    <div style="position: relative; display: inline-block">
+                        <input v-model="seed" type=text id="seed" placeholder="Voer een reutel in..">
+                        <span id="seed_length">{{ (seed && seed.length) || 0 }}</span>
+                    </div>
+                    <button v-on:click="generate" id="generate">Genereer</button>
+                    <input v-model="temperature" type=range min="0" max="4" step="0.01" id="temperature">
+					<span id="temperature">{{ temperature }}</span>
                 </div>
                      
                 <div class="response">
                     <div class="blob" style="background-color: #dbebf1;">
                         <p v-if="!generate_status" class="text">Voer een tekst in ...</p>
-                        <p v-if="generate_status == 'PENDING'">Nietzsche is aan het nadenken ... </p>
-                        <p v-if="generate_status == 'DONE'" class="text"><strong>{{ seed }}</strong>{{ generated_text }}</p>
+                        <p v-if="generate_status == 'PENDING'">KiesBot is aan het nadenken ... </p>
+                        <p v-if="generate_status == 'DONE'" class="text">
+                            <strong>{{ generated_text.seed }}</strong><span v-if="show_certainties" v-html="renderCertainties(generated_text)"></span><span v-else>{{ generated_text.result_text }}</span>
+                        </p>
                     </div>
 
                 </div>
 
                 <div id="blobs_list">
 
-                    <div class="blob" v-for="result in results.slice().reverse()">
-                        <p><span style="font-weight: bold;" title="seed">{{ result.seed }}</span>{{ result.result_text }}</p>
+                    <div class="blob" v-for="(result, blob_index) in results.slice().reverse()">
+                        <div style="float: right">
+                            <div v-for="(text, index) in result.result_texts" style="display: inline-block">
+                                <input v-model="temperatures[blob_index]" :name="'temp_' + blob_index" type="radio" :value="index" :id="'id_' + index">
+                                <label for="'id_' +  index">{{ text.temperature }}</label>
+                            </div>
+                        </div>
+                        <p>
+                            <span style="font-weight: bold;" title="seed">{{ result.seed }}</span><span v-for="(text, index) in result.result_texts" v-show="temperatures[blob_index] == index"><span v-if="show_certainties" v-html="renderCertainties(text)"></span>
+                                <span v-else>{{ text.result_text }}</span>
+                            </span>
+                        </p>
                         <div class="stats">
                             <span>Epoch: <strong>{{ result.iteration }}</strong></span> 
                             <span>Loss: <strong>{{ result.loss | parse_float }}</strong></span>

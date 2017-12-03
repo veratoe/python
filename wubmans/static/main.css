@@ -60,11 +60,7 @@ canvas {
     top: 10
 }
 
-body.hide_certainties p span {
-    color: #000 !important;
-}
-
-#seed_length {
+#seed_length, #temperature {
     font-weight: bold;
     font-family: monospace;
     color: #777;
@@ -85,4 +81,33 @@ body.hide_certainties p span {
         padding: 20px 0px;
     }
 
+}
+
+input#seed {
+    padding: 12px;
+    border-radius: 5px;
+    outline: none;
+    box-shadow: none;
+    border: 1px solid #8aaa;
+    width: 400px;
+}
+
+input#temperature {
+    top: 6px;
+    position: relative;
+}
+
+#seed_length {
+    position: absolute;
+    right: 11px;
+    top: 13px;
+}
+
+button#generate {
+    padding: 12px;
+    background-color: #e0dbcd;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
 }

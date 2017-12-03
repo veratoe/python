@@ -1,6 +1,15 @@
+import numpy as np
+import random
+import sys
+import os
+import json
+import time
+from pathlib import Path
+
 filepath = "weights-best.hdf5"
 maxlen = 40
 step = 3
+batch_size = 256 
 text = open('verkiezing.txt').read().lower()
 chars = sorted(list(set(text)))
 int_to_char = dict((k, v) for k, v in enumerate(chars))
@@ -9,22 +18,38 @@ print("Dicts gemaakt ...")
 print("Aantal characters: %s" % len(chars))
 
 
-def train():
+def get_index(preds, temperature=1.0):
+# helper function to sample an index from a probability array
+    preds = np.asarray(preds[0]).astype('float64')
+    preds = np.log(preds) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
 
-    import numpy as np
-    import random
-    import sys
-    import os
-    import keras
-    import json
-    import time
-
-    from pathlib import Path
+def create_model(): 
 
     from keras.models import Sequential
     from keras.layers import Dense, LSTM, Activation, Dropout
     from keras.callbacks import ModelCheckpoint, Callback
     from keras.optimizers import Adam
+
+    model = Sequential()
+    model.add(LSTM(256, input_shape = (maxlen, len(chars)), return_sequences = True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(256, return_sequences = True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(256))
+    model.add(Dropout(0.2))
+    model.add(Dense(len(chars), activation = 'softmax'))
+    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0005))
+
+    return model
+
+
+def train():
+
+    import keras
 
     os.system('clear')
     print('We gaan beginnen')
@@ -50,16 +75,7 @@ def train():
 
     print('vectors gemaakt..')
 
-    model = Sequential()
-    model.add(LSTM(256, input_shape = (maxlen, len(chars)), return_sequences = True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(256, return_sequences = True))
-    model.add(Dropout(0.2))
-    model.add(LSTM(256))
-    model.add(Dropout(0.2))
-    model.add(Dense(len(chars), activation = 'softmax'))
-    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.001))
-
+    model = create_model();
     model.summary()
 
     if Path(filepath).is_file():
@@ -93,7 +109,7 @@ def train():
                     pf = open('status.json', 'w')
                     pf.write(json.dumps({
                         'batch': str(d['batch']),
-                        'total_batches': len(sentences) / 128,
+                        'total_batches': len(sentences) / batch_size,
                         'loss': str(self.loss / self.wub),
                         'iteration': iteration,
                         'time': time.time() - self.time
@@ -109,7 +125,7 @@ def train():
         print()
         print('-' * 50)
         print('Iteratie: ', iteration)
-        history = model.fit(x, y, batch_size = 64, epochs = 1, callbacks = callbacks_list)
+        history = model.fit(x, y, batch_size = batch_size, epochs = 1, callbacks = callbacks_list)
         loss = history.history['loss'][0]
 
         start_index = random.randint(0, len(sentences) - 1)
@@ -123,14 +139,6 @@ def train():
         initial_seed = seed
         result_texts = []
 
-        def probs(preds, temperature=1.0):
-        # helper function to sample an index from a probability array
-            preds = np.asarray(preds).astype('float64')
-            preds = np.log(preds) / temperature
-            exp_preds = np.exp(preds)
-            preds = exp_preds / np.sum(exp_preds)
-            probas = np.random.multinomial(1, preds, 1)
-            return np.argmax(probas)
 
         for temperature in [0.2, 0.5, 1.0, 1.2]:
 
@@ -145,14 +153,14 @@ def train():
                     s[0, i, char_to_int[c]] = 1
     
                 prediction = model.predict(s, verbose = 0)
-                index = probs(prediction, temperature)
-                certainties.append(np.amax(prediction))
+                index = get_index(prediction, temperature)
+                certainties.append(prediction[0,index])
                 result = int_to_char[index]
                 result_text += result
                 sys.stdout.write(result)
                 seed = seed[1:] + result
 
-            result_texts.append({ result_text: result_text, certainties: [str(x) for x in certainties] })
+            result_texts.append({ "result_text": result_text, "certainties": [str(x) for x in certainties], "temperature": temperature })
 
         f = open('resultaten.json', 'a')
 
@@ -174,34 +182,15 @@ def train():
             best_loss = loss
 
 
-def predict(seed):
+def predict(seed, temperature):
 
     import tensorflow as tf
 
     with tf.device('/cpu:0'):
 
-        import numpy as np
-        import random
-        import sys
-        import os
         import keras
-        import json
-        import time
 
-        from pathlib import Path
-
-        from keras.models import Sequential
-        from keras.layers import Dense, LSTM, Activation, Dropout
-        from keras.callbacks import ModelCheckpoint, Callback
-        from keras.optimizers import Adam
-
-        model = Sequential()
-        model.add(LSTM(128, input_shape = (maxlen, len(chars)), return_sequences = True))
-        model.add(Dropout(0.2))
-        model.add(LSTM(128))
-        model.add(Dropout(0.2))
-        model.add(Dense(len(chars), activation = 'softmax'))
-        model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0002))
+        model = create_model()
         model.load_weights(filepath)
 
         seed = seed[:40]
@@ -216,17 +205,14 @@ def predict(seed):
                 s[0, i, char_to_int[c]] = 1
 
             prediction = model.predict(s, verbose = 0)
-            index = np.argmax(prediction)
-            certainties.append(np.amax(prediction))
+            index = get_index(prediction, float(temperature))
+            certainties.append(prediction[0,index])
             result = int_to_char[index]
-            print('char: ', result)
             result_text += result
-            sys.stdout.write(result)
             seed = seed[1:] + result
-            print('text: ', result_text)
-            print('seed: ', seed)
 
         return {
+            'seed': initial_seed,
             'result_text': result_text,
             'certainties': [str(x) for x in certainties]
         }

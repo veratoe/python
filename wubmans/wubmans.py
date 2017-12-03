@@ -37,7 +37,9 @@ def results():
 def seed():
     print('we got a request')
     print(request.get_json())
-    a = rnn.predict(request.get_json())
+    request_data = request.get_json()
+    print(type(request_data))
+    a = rnn.predict(request_data['seed'], request_data['temperature'])
 
     return app.response_class(
         response = json.dumps(a),

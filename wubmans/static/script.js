@@ -8,7 +8,12 @@ new Vue({
 
         seed: null,
         generate_status: null,
-        generated_text: null
+        generated_text: null,
+
+        temperature: 0.1,
+        temperatures: [],
+        show_certainties: null,
+
     },
 
     mounted() {
@@ -37,25 +42,6 @@ new Vue({
                     self.status_pending = false;
                 }
 
-
-                /*
-
-                status.loss = Number(status.loss).toFixed(3);
-                var minutes = Math.floor(Number(status.time) / 59)
-                var seconds = Math.floor(Number(status.time) % 59)
-                status.time = minutes + ":" + (seconds < 9 ? "0" : "") + seconds;
-
-                for (var key in status) {
-                    $("#status_" + key).text(status[key])
-                };
-
-                if (current_iteration !== status.iteration) {
-                    current_iteration = status.iteration;
-                    loadResults();
-                }
-
-                */
-
                 status_pending = false;
 
             })
@@ -67,11 +53,15 @@ new Vue({
 
     },
 
+    ready() {
+
+    },
 
     watch: {
 
         'results' () {
             createChart(this.results)
+            this.results.forEach((element, index) => { this.temperatures[index] = 0; })
         }
     },
 
@@ -125,6 +115,51 @@ new Vue({
 
         },
 
+        renderCertainties (text) {
+
+            var c1 = "#e6194b";
+            var c2 = "#3cb44b";
+
+
+            // Converts a #ffffff hex string into an [r,g,b] array
+            var h2r = function(hex) {
+                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? [
+                    parseInt(result[1], 16),
+                    parseInt(result[2], 16),
+                    parseInt(result[3], 16)
+                ] : null;
+            };
+            
+            // Inverse of the above
+            var r2h = function(rgb) {
+                return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
+            };
+
+            var interpolate = (a, b, i) => { 
+                a = h2r(a)
+                b = h2r(b)
+
+                var r = a[0] + ((b[0] - a[0]) * i | 0)
+                var g = a[1] + ((b[1] - a[1]) * i | 0)
+                var b = a[2] + ((b[2] - a[2]) * i | 0)
+
+                return r2h([r, g, b]);
+            }
+
+            var html = "";
+            for (c in text.result_text) {
+                if (text.result_text[c] !== " ") {
+                    html += "<span style='color: " + interpolate(c1, c2, text.certainties[c]) + "'>" + text.result_text[c] + "</span>" 
+                } else {
+                    html += text.result_text[c];
+                }
+            }
+
+            return html;
+
+        },
+
         generate () {
 
             var self = this;
@@ -134,19 +169,12 @@ new Vue({
             $.ajax({
                 url: "/seed", 
                 type: "POST",
-                data: JSON.stringify(self.seed.toLowerCase()),
+                data: JSON.stringify({ "seed": self.seed.toLowerCase(), "temperature": self.temperature }),
                 contentType: 'application/json; charset=utf-8',
                 dataType: 'json',
                 success: function (data) {
-
                     self.generate_status = "DONE";
-
-                    self.generated_text = data.result_text;
-                    /*
-                    $(".response .text").html(
-                            "<span style='font-weight: bold'>" + seed.substring(0, 40) + "</span>" + parseResultText(data)
-                    )
-                    */
+                    self.generated_text = data;
                 }
 
             })
@@ -166,166 +194,9 @@ new Vue({
 
         parse_float (value) {
             return Number(value).toFixed(4);
-        }
+        },
 
 
     }
 
 });
-
-/*
-var results, 
-    status, status_pending, current_iteration = -1; var loadResults = function () {
-
-    $.getJSON('results', function(data) { 
-        r = data.split("#@#");
-        r = r.map(function(json) { 
-            try {
-                var j = JSON.parse(json);
-                j.model_improved = j.model_improved == "true" ? "MODEL VERBETERD" : "";
-                j.loss = Number(j.loss).toFixed(3);
-                if (j.time) {
-                    var minutes = Math.floor(Number(j.time) / 59)
-                    var seconds = Math.floor(Number(j.time) % 59)
-                    j.time = minutes + ":" + (seconds < 9 ? "0" : "") + seconds;
-                } else {
-                    j.time = "-"
-                }   
-
-                return j;
-            }
-            catch(e) {
-            }
-
-        });
-
-        r = r.filter(function (item) { return typeof item === "object" });
-
-        for (var i = 0; i < r.length; i++) {
-            r[i].iteration = i
-        }
-        
-        results = r;
-
-        renderBlobs();
-    })
-
-}
-
-setInterval(function () {
-
-    if (status_pending) {
-        
-        return;
-    }
-
-    status_pending = true;
-
-    $.getJSON('status', function(data) { 
-
-        var status;
-
-        try {
-            status = JSON.parse(data);
-        }
-
-        catch(e) {
-            status_pending = false;
-        }
-
-        if (!status) {
-            return;
-        } 
-
-        status.loss = Number(status.loss).toFixed(3);
-        var minutes = Math.floor(Number(status.time) / 59)
-        var seconds = Math.floor(Number(status.time) % 59)
-        status.time = minutes + ":" + (seconds < 9 ? "0" : "") + seconds;
-
-        for (var key in status) {
-            $("#status_" + key).text(status[key])
-        };
-
-        if (current_iteration !== status.iteration) {
-            current_iteration = status.iteration;
-            loadResults();
-        }
-
-        status_pending = false;
-
-    })
-    
-}, 9)
-
-
-var renderBlobs = function () {
-
-    var template = $("#blobs_template").html();
-    var html = "";
-    results.slice().reverse().forEach(function (r) {
-        html += renderHTML(template, r);
-    })
-
-    $("#blobs_list").html(html);
-}
-
-var parseResultText = function (data) {
-    if (!data.certainties) 
-        return data.result_text;
-
-    var html = "";
-    for (c in data.result_text) {
-        var x = 254 * (1 - data.certainties[c]) | 0;
-        html += "<span style='color: rgb(" + x + "," + x + "," + x + ")'>" + data.result_text[c] + "</span>" 
-    }
-    return html;
-
-}
-
-window.colorText = false
-
-var renderHTML = function (html, data) {
-
-    for (var key in data) {
-        var regex = new RegExp( "{{\\s+" + key + "\\s+}}", "g" );
-        if (key === "result_text") {
-            html = html.replace(regex, parseResultText(data));
-        } else {
-            html = html.replace(regex, data[key]);
-        }
-    }
-
-    return html;
-
-}
-
-$("input[name=certainties]").on("change", () => { $("body").toggleClass('hide_certainties', !$("input[name=certainties]").prop("checked")) });
-
-var sendSeed = function () {
-
-    var seed = $("input#seed").val().toLowerCase()
-
-    $(".response .text").text("... Nietzsche is aan het nadenken ... ");
-    $.ajax({
-        url: "/seed", 
-        type: "POST",
-        data: JSON.stringify(seed),
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        success: function (data) {
-
-            data.seed = seed;
-            parseResultText(data);
-            $(".response .text").html(
-                    "<span style='font-weight: bold'>" + seed.substring(0, 40) + "</span>" + parseResultText(data)
-            )
-        }
-
-    })
-
-}
-
-$("button#submit").on("click", sendSeed);
-$("input#seed").on("keyup", (e) => { $("#seed_length").html( $("input#seed").val().length); if (e.keyCode == 13) sendSeed();  })
-
-*/
