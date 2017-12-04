@@ -51,10 +51,6 @@ p {
     font-family: serif;
 }
 
-p span {
-    //display: inline-block;
-}
-
 canvas {
     position: fixed;
     top: 10

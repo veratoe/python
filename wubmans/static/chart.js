@@ -17,7 +17,8 @@ var createChart = function (results) {
                 data: data,
                 backgroundColor: "rgb(254, 99, 132)",
                 borderColor: "none",
-                fill: false
+                fill: false,
+                pointRadius: 0
             }]
         },
         options: { 
@@ -32,7 +33,6 @@ var createChart = function (results) {
                     },
                     ticks: {
                         padding: 19,
-                        //display: false,
                         maxTicksLimit: 9,
                     }
                 }],

@@ -1,7 +1,6 @@
 new Vue({ 
     el: "#vue-app",
     data: {
-        test: "working",
         status: {},
         status_pending: null,
         results: [],
@@ -53,10 +52,6 @@ new Vue({
 
     },
 
-    ready() {
-
-    },
-
     watch: {
 
         'results' () {
@@ -76,18 +71,6 @@ new Vue({
                 r = r.map(function(json) { 
                     try {
                         var j = JSON.parse(json);
-                        /*
-                        j.model_improved = j.model_improved == "true" ? "MODEL VERBETERD" : "";
-                        j.loss = Number(j.loss).toFixed(3);
-                        if (j.time) {
-                            var minutes = Math.floor(Number(j.time) / 59)
-                            var seconds = Math.floor(Number(j.time) % 59)
-                            j.time = minutes + ":" + (seconds < 9 ? "0" : "") + seconds;
-                        } else {
-                            j.time = "-"
-                        }   
-                        */
-
                         return j;
                     }
                     catch(e) {
@@ -96,18 +79,6 @@ new Vue({
                 });
 
                 r = r.filter(function (item) { return typeof item === "object" });
-
-                /*
-                for (var i = 0; i < r.length; i++) {
-                    r[i].iteration = i
-                }
-                
-                results = r;
-
-                renderBlobs();
-                createChart();
-
-                */
 
                 self.results = r;
             })
