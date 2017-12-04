@@ -31,7 +31,6 @@ def create_model():
 
     from keras.models import Sequential
     from keras.layers import Dense, LSTM, Activation, Dropout
-    from keras.callbacks import ModelCheckpoint, Callback
     from keras.optimizers import Adam
 
     model = Sequential()
@@ -42,7 +41,7 @@ def create_model():
     model.add(LSTM(256))
     model.add(Dropout(0.2))
     model.add(Dense(len(chars), activation = 'softmax'))
-    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0005))
+    model.compile(loss = 'categorical_crossentropy', optimizer = Adam(lr = 0.0001))
 
     return model
 
@@ -50,6 +49,7 @@ def create_model():
 def train():
 
     import keras
+    from keras.callbacks import ModelCheckpoint, Callback
 
     os.system('clear')
     print('We gaan beginnen')
@@ -138,7 +138,6 @@ def train():
 
         initial_seed = seed
         result_texts = []
-
 
         for temperature in [0.2, 0.5, 1.0, 1.2]:
 

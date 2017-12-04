@@ -150,7 +150,7 @@ new Vue({
             var html = "";
             for (c in text.result_text) {
                 if (text.result_text[c] !== " ") {
-                    html += "<span style='color: " + interpolate(c1, c2, text.certainties[c]) + "'>" + text.result_text[c] + "</span>" 
+                    html += "<span title='" + text.certainties[c] + "' style='cursor: pointer; color: " + interpolate(c1, c2, text.certainties[c]) + "'>" + text.result_text[c] + "</span>" 
                 } else {
                     html += text.result_text[c];
                 }

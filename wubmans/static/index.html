@@ -36,7 +36,7 @@
                         <span id="seed_length">{{ (seed && seed.length) || 0 }}</span>
                     </div>
                     <button v-on:click="generate" id="generate">Genereer</button>
-                    <input v-model="temperature" type=range min="0" max="4" step="0.01" id="temperature">
+                    <input v-model="temperature" type=range min="0" max="2.5" step="0.01" id="temperature">
 					<span id="temperature">{{ temperature }}</span>
                 </div>
                      
@@ -53,7 +53,7 @@
 
                 <div id="blobs_list">
 
-                    <div class="blob" v-for="(result, blob_index) in results.slice().reverse()">
+                    <div class="blob" v-for="(result, blob_index) in results.slice().reverse().slice(0, 10)">
                         <div style="float: right">
                             <div v-for="(text, index) in result.result_texts" style="display: inline-block">
                                 <input v-model="temperatures[blob_index]" :name="'temp_' + blob_index" type="radio" :value="index" :id="'id_' + index">
