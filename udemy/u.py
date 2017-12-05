@@ -1,0 +1,47 @@
+import sys
+
+import flask
+import json
+from flask import request
+
+#import rnn
+
+app = flask.Flask(__name__)
+
+
+@app.route("/")
+def root():
+    return app.send_static_file('index.html')
+
+#@app.route("/status")
+#def status():
+#    return app.response_class(
+#        response = json.dumps(open(status_json).read()),
+#        status = 200,
+#        mimetype = 'application/json'
+#    )
+
+#@app.route("/results")
+#def results():
+#    return app.response_class(
+#        response = json.dumps(open(results_json).read()),
+#        status = 200,
+#        mimetype = 'application/json'
+#    )
+
+
+#@app.route("/seed", methods = ['POST'])
+#def seed():
+#    print('we got a request')
+#    print(request.get_json())
+#    request_data = request.get_json()
+#    print(type(request_data))
+#    a = rnn.predict(request_data['seed'], request_data['temperature'])
+#
+#    return app.response_class(
+#        response = json.dumps(a),
+#        status = 200,
+#        mimetype = 'application/json'
+#    )
+
+app.run(debug = False, host = '192.168.1.14', port = 8000)
