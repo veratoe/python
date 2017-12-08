@@ -2,7 +2,11 @@ import sys
 
 import flask
 import json
+import base64
+
 from flask import request
+from PIL import Image
+from io import BytesIO
 
 #import rnn
 
@@ -30,18 +34,23 @@ def root():
 #    )
 
 
-#@app.route("/seed", methods = ['POST'])
-#def seed():
-#    print('we got a request')
-#    print(request.get_json())
-#    request_data = request.get_json()
-#    print(type(request_data))
-#    a = rnn.predict(request_data['seed'], request_data['temperature'])
-#
-#    return app.response_class(
-#        response = json.dumps(a),
-#        status = 200,
-#        mimetype = 'application/json'
-#    )
+@app.route("/upload", methods = ['POST'])
+def upload():
+    print('we got a request')
+    data = request.form['url']
+
+    image = Image.open(BytesIO(base64.b64decode(data.replace("data:image/png;base64,", ""))))
+    image = image.resize((28, 28))
+    image.save("sample.png")
+
+    import mnist
+
+    prediction = mnist.predict()
+
+    return app.response_class(
+        response = json.dumps(prediction.tolist()[0]),
+        status = 200,
+        mimetype = "application/json"
+    )
 
 app.run(debug = False, host = '192.168.1.14', port = 8000)

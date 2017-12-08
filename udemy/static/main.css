@@ -31,3 +31,10 @@ button {
     cursor: pointer;
     outline: 0
 }
+
+#results {
+    margin-top: 20px;
+    display: block;
+    font-family: monospace;
+    text-align: center;
+}
