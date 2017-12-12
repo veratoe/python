@@ -84,7 +84,6 @@ def train():
             sess.run(train, feed_dict={ x: batch_x, y_true: batch_y, hold_prob: 0.5 })
 
             if step % 10 == 0:
-                print("ON STEP: {}".format(step))
                 correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y_true, 1))
                 acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
                 acc_score = sess.run(acc, feed_dict = { x: mnist.test.images, y_true: mnist.test.labels, hold_prob: 1.0 })
@@ -103,7 +102,7 @@ def predict():
 
     tf.reset_default_graph()
 
-    x, y, y_true, train = create_model()
+    x, y_pred, y_true, train, hold_prob = create_model()
     saver = tf.train.Saver()
 
     data = np.array(Image.open("sample.png"))
@@ -114,7 +113,7 @@ def predict():
 
         saver.restore(sess, "./model.ckpt")
 
-        predict = sess.run(y, feed_dict={ x: data })
+        predict = sess.run(y_pred, feed_dict={ x: data, hold_prob: 1 })
         print(predict)
 
     return predict
