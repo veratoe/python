@@ -5,6 +5,7 @@ var imageData = ctx.getImageData(0, 0, c.width, c.height);
 var weights;
 
 var pixelSize = 15;
+var kernel_size = 5;
 
 setInterval(() => {
 
@@ -36,8 +37,8 @@ var drawWeights = function() {
         var offsetX = f % 8;
         var offsetY = Math.floor (f / 8);
 
-        for (var x = 0; x < 5; x++) {
-            for (var y = 0; y < 5; y++) {
+        for (var x = 0; x < kernel_size; x++) {
+            for (var y = 0; y < kernel_size; y++) {
                 for (var px = 0; px < pixelSize; px++){
                     for (var py = 0; py < pixelSize; py++){
                         var o = ((px + x * pixelSize + (offsetX * pixelSize * 6)) + ((py + y * pixelSize + (offsetY * pixelSize * 6)) * c.width)) * 4;
